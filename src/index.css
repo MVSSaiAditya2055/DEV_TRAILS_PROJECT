@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  line-height: 1.45;
+  font-weight: 400;
+  color: #0f2733;
+  background: radial-gradient(circle at 8% 10%, #edf8ff 0, transparent 45%),
+    radial-gradient(circle at 90% 12%, #e7fff3 0, transparent 35%), #f3fbff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  color: #032a3f;
+}

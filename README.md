@@ -1,100 +1,104 @@
-# GigShield - Parametric Insurance for Delivery Workers
+# GigShield - Fraud-Resistant AI powered Insurance system
 
-Guidewire DEVTrails 2026 | Phase 1
+**Guidewire DEVTrails 2026 | Phase 1**
+
+---
 
 ## What is this?
 
-Delivery workers get caught in storms and cannot work, but nobody pays them for it. GigShield does. When severe weather hits a zone where a delivery partner is working, the platform detects it, verifies they were actually there, and triggers payout automatically.
+Delivery workers get caught in storms and can't work, but nobody pays them for it. GigShield does. When severe weather hits a zone where a delivery partner is working, our platform detects it, verifies they were actually there, and sends the payout automatically — no claim form, no waiting.
 
-This repository now contains a functional React frontend prototype with a live anti-spoofing decision simulator.
+---
 
-## Functional React Prototype (Current)
+## How it works
 
-Implemented in this phase:
+1. Worker signs up and enables location + motion access on the app
+2. We monitor real-time weather data across delivery zones
+3. When a red-alert event is declared, we check which active workers are in that zone
+4. Their presence is verified using multiple signals (not just GPS)
+5. Payout fires automatically via smart contract — money hits their wallet within minutes
 
-- Worker signal intake panel (route, motion, tower, Wi-Fi, spoofing footprint)
-- Weather event control panel (severity, zone, claim spikes, saturation)
-- Real-time confidence engine with tiered actioning:
-	- High (85%+): instant payout
-	- Medium (50-84%): soft hold + lightweight verification
-	- Low (<50%): human review + one-tap appeal
-- Signal-by-signal contribution breakdown for transparency
-
-## How to run locally
-
-```bash
-npm install
-npm run dev
-```
-
-Open the URL shown in terminal (typically http://localhost:5173).
-
-## How it works (Product Workflow)
-
-1. Worker signs up and enables location + motion access on the app.
-2. Platform monitors weather feeds across delivery zones.
-3. On red-alert declaration, active workers in zone are shortlisted.
-4. Presence is verified using multi-signal anti-spoofing logic.
-5. Decision tier determines instant payout, soft hold, or rapid human review.
+---
 
 ## Tech stack
 
-- Backend: FastAPI (Python)
-- Mobile: React Native
-- Fraud Detection: XGBoost
-- Weather Data: OpenWeatherMap + IMD feeds
-- Payouts: Polygon smart contracts
-- Database: PostgreSQL + Redis
-- Frontend prototype in this repo: React + Vite
+- **Backend:** FastAPI (Python)
+- **Mobile:** React Native
+- **Fraud Detection:** XGBoost
+- **Weather Data:** OpenWeatherMap + IMD feeds
+- **Payouts:** Polygon smart contracts
+- **Database:** PostgreSQL + Redis
+
+---
 
 ## Adversarial Defense & Anti-Spoofing Strategy
 
-### 1) The Differentiation
+During Phase 1, a coordinated group of 500 workers was caught using GPS spoofing apps to fake their location in red-alert zones and trigger false payouts. Here's how we stop that.
 
-GPS alone is not trusted. The model differentiates genuine stranded workers from spoofers using a multi-signal confidence architecture:
+### 1. How we tell a real worker from a faker
 
-- Motion sensor consistency (accelerometer + gyroscope)
-- Route continuity with the worker's active delivery path
-- Cell tower triangulation match versus claimed zone
-- Wi-Fi context checks (home network overlap)
-- Mock-location and spoofing footprint detection
-- Impossible-travel detection from last verified point
+GPS alone is useless — it takes two taps to fake. So we don't rely on it.
 
-Each signal contributes to a confidence score. No single signal can auto-reject.
+A person genuinely stranded in a storm leaves a completely different digital footprint than someone sitting at home with a spoofing app running.
 
-### 2) The Data
+- **Motion sensors** — A real worker is moving. Someone on their couch isn't. Accelerometer and gyroscope data can't be faked by a GPS spoofer.
+- **Route continuity** — If the claimed zone has nothing to do with the worker's delivery route that day, that's a red flag. Stranded workers are stranded *on the job*.
+- **Cell tower cross-check** — Cell towers place your phone independently of GPS. If tower data says you're in a residential area but GPS claims you're in a flood zone, we catch that.
+- **Wi-Fi check** — Connected to your home Wi-Fi while claiming to be in a disaster zone? Flagged.
+- **Spoofing app detection** — These apps require developer/mock location settings and leave timing inconsistencies in sensor data. We scan for both.
 
-Beyond basic GPS coordinates, the platform analyzes:
+All signals combine into one confidence score. No single data point decides anything.
 
-- Accelerometer and gyroscope quality metrics
-- Shift route alignment metadata
-- Cell tower verification confidence
-- Known Wi-Fi overlap indicators
-- Device mock-location/developer-mode signals
-- Claim-timing anomalies (batch spikes in 10-minute windows)
-- Zone saturation ratios (unusually high simultaneous claimant percentage)
-- Cross-account linkage markers (device/payment/referral graph)
-- Temporal travel feasibility between verified checkpoints
+### 2. Catching coordinated rings, not just individuals
 
-These are aggregated to detect both individual spoofing and coordinated fraud rings.
+- **Claim spikes** — Real workers submit claims at random times. A synchronized wave of claims right after a Telegram message is a pattern, not a coincidence.
+- **Zone saturation** — If an unusually high percentage of workers in a zone all claim at once, the whole batch gets flagged.
+- **Linked accounts** — Shared devices, referral chains, and linked payment accounts reveal fraud networks.
+- **Impossible travel** — If you were verified 40km away 15 minutes ago, you can't be here now.
 
-### 3) The UX Balance
+### 3. Keeping it fair for honest workers
 
-To avoid punishing honest workers during poor weather connectivity, flagged claims use a tiered workflow:
+Bad weather kills GPS signals and connectivity. If our system is too aggressive, we end up denying the exact people we're supposed to help. So instead of approve/deny, we use three tiers:
 
-- High confidence (>=85%): instant payout, no friction
-- Medium confidence (50-84%): 2-hour soft hold + one simple verification step
-- Low confidence (<50%): human review within 4 hours, transparent reason, one-tap appeal
+| Confidence | What happens |
+|---|---|
+| High (85%+) | Instant payout, no friction |
+| Medium (50–84%) | 2-hour soft hold, one simple verification step (quick live photo) |
+| Low (below 50%) | Human review within 4 hours, worker told exactly why, one-tap appeal |
 
-Fairness safeguards:
+A few extra protections:
+- GPS signal drops during a storm are treated as *expected*, not suspicious
+- Workers can file claims offline — the app stores sensor data locally and syncs later
+- One ambiguous claim never affects a worker's trust score
 
-- GPS signal drops during severe storms are treated as expected context
-- Offline claim capture is allowed and syncs later
-- A single ambiguous event does not permanently reduce trust score
+The goal: make fraud hard, make appeals easy.
+
+---
+
+## Running locally
+
+```bash
+# Clone the repository
+git clone https://github.com/MVSSaiAditya2055/DEV_TRAILS_PROJECT.git
+cd DEV_TRAILS_PROJECT
+
+# Run mobile app
+cd mobile
+npm install
+npx react-native run-android
+```
+
+---
 
 ## Team
 
-- N Veda Sivakumar - Backend
-- M V S Sai Aditya - ML / Fraud Detection
-- AaftaabRabbani Khan - Mobile
-- S Kishore Kumar - Smart Contracts
+| Name | Role |
+|---|---|
+| [N Veda Sivakumar] | Backend |
+| [M V S Sai Aditya] | ML / Fraud Detection |
+| [AaftaabRabbani Khan] | Mobile |
+| [S Kishore Kumar] | Smart Contracts |
+
+---
+
+*DEVTrails 2026 — Phase 1*

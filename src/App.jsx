@@ -3,6 +3,96 @@ import './App.css'
 
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value))
 
+function computeInsuranceFundamentals(worker, event, policy) {
+  const severityFactorMap = { green: 0.85, amber: 1.05, red: 1.35 }
+  const frequencyFactorMap = { low: 0.9, medium: 1.0, high: 1.25 }
+  const zoneRiskMap = { low: 0.9, medium: 1.0, high: 1.18 }
+
+  const severityFactor = severityFactorMap[event.weatherSeverity] ?? 1
+  const frequencyFactor = frequencyFactorMap[policy.historicalFrequencyBand] ?? 1
+  const zoneRiskFactor = zoneRiskMap[policy.zoneRiskBand] ?? 1
+
+  const exposureFactor = clamp(worker.lastSeenMinutes, 30, 720) / 120
+  const expectedMonthlyLoss =
+    policy.basePayoutINR *
+    policy.triggerProbability *
+    severityFactor *
+    frequencyFactor *
+    zoneRiskFactor *
+    (exposureFactor / 4)
+
+  const grossPurePremium = expectedMonthlyLoss + policy.fixedExpenseINR
+  const finalMonthlyPremium = Math.max(
+    50,
+    Math.round((grossPurePremium * (1 + policy.riskMarginPct / 100)) / 10) * 10,
+  )
+
+  const lossRatio = Math.round((expectedMonthlyLoss / finalMonthlyPremium) * 100)
+
+  const exclusions = [
+    {
+      id: 'outside-zone',
+      text: 'No payout if worker location is outside insured zone at trigger time.',
+      applies: worker.currentZone !== event.eventZone,
+    },
+    {
+      id: 'non-red-alert',
+      text: 'No payout for green/amber events; policy only responds to red alerts.',
+      applies: event.weatherSeverity !== 'red',
+    },
+    {
+      id: 'mock-location',
+      text: 'Claims excluded when mock location settings are detected during event window.',
+      applies: worker.mockLocationEnabled,
+    },
+    {
+      id: 'home-wifi',
+      text: 'Claims excluded if home Wi-Fi overlap indicates non-field activity.',
+      applies: worker.homeWifi,
+    },
+  ]
+
+  const activeExclusions = exclusions.filter((item) => item.applies)
+
+  const regulatoryChecklist = [
+    {
+      id: 'consent',
+      label: 'Explicit telematics and data-processing consent',
+      passed: policy.hasDataConsent,
+    },
+    {
+      id: 'kyc',
+      label: 'KYC verified policyholder identity',
+      passed: policy.kycVerified,
+    },
+    {
+      id: 'disclosure',
+      label: 'Product disclosure (trigger + exclusions) acknowledged',
+      passed: policy.disclosureAccepted,
+    },
+    {
+      id: 'grievance',
+      label: 'Grievance and escalation contact available in app',
+      passed: policy.grievanceContactAvailable,
+    },
+  ]
+
+  const compliant = regulatoryChecklist.every((item) => item.passed)
+
+  return {
+    severityFactor,
+    frequencyFactor,
+    zoneRiskFactor,
+    expectedMonthlyLoss: Math.round(expectedMonthlyLoss),
+    finalMonthlyPremium,
+    lossRatio,
+    activeExclusions,
+    exclusionCatalog: exclusions,
+    regulatoryChecklist,
+    compliant,
+  }
+}
+
 function computeFraudSignals(worker, event) {
   const speedKmh = worker.lastSeenMinutes > 0
     ? (worker.lastSeenKm / worker.lastSeenMinutes) * 60
@@ -100,12 +190,29 @@ function App() {
     payoutINR: 540,
   })
 
+  const [policy, setPolicy] = useState({
+    basePayoutINR: 600,
+    triggerProbability: 0.22,
+    fixedExpenseINR: 45,
+    riskMarginPct: 18,
+    historicalFrequencyBand: 'medium',
+    zoneRiskBand: 'medium',
+    hasDataConsent: true,
+    kycVerified: true,
+    disclosureAccepted: true,
+    grievanceContactAvailable: true,
+  })
+
   const [evaluated, setEvaluated] = useState(false)
 
   const isEligibleEvent =
     event.weatherSeverity === 'red' && worker.currentZone === event.eventZone
 
   const decision = useMemo(() => computeFraudSignals(worker, event), [worker, event])
+  const insurance = useMemo(
+    () => computeInsuranceFundamentals(worker, event, policy),
+    [worker, event, policy],
+  )
 
   const payoutStatus = !isEligibleEvent
     ? 'No red-alert trigger in this worker zone'
@@ -121,6 +228,10 @@ function App() {
 
   function updateEvent(key, value) {
     setEvent((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function updatePolicy(key, value) {
+    setPolicy((prev) => ({ ...prev, [key]: value }))
   }
 
   return (
@@ -302,6 +413,157 @@ function App() {
         </article>
       </section>
 
+      <section className="grid insurance-grid">
+        <article className="card">
+          <h2>Premium Model</h2>
+          <div className="field-grid">
+            <label>
+              Base payout for rating (INR)
+              <input
+                type="number"
+                min="100"
+                value={policy.basePayoutINR}
+                onChange={(e) => updatePolicy('basePayoutINR', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Trigger probability (monthly)
+              <input
+                type="number"
+                min="0.01"
+                max="0.99"
+                step="0.01"
+                value={policy.triggerProbability}
+                onChange={(e) => updatePolicy('triggerProbability', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Fixed expense loading (INR)
+              <input
+                type="number"
+                min="0"
+                value={policy.fixedExpenseINR}
+                onChange={(e) => updatePolicy('fixedExpenseINR', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Risk margin (%)
+              <input
+                type="number"
+                min="0"
+                max="70"
+                value={policy.riskMarginPct}
+                onChange={(e) => updatePolicy('riskMarginPct', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Historical event frequency
+              <select
+                value={policy.historicalFrequencyBand}
+                onChange={(e) => updatePolicy('historicalFrequencyBand', e.target.value)}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label>
+              Zone hazard band
+              <select
+                value={policy.zoneRiskBand}
+                onChange={(e) => updatePolicy('zoneRiskBand', e.target.value)}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="stats-grid">
+            <article className="stat-box">
+              <h3>Expected Loss</h3>
+              <p>INR {insurance.expectedMonthlyLoss}/month</p>
+            </article>
+            <article className="stat-box">
+              <h3>Indicative Premium</h3>
+              <p>INR {insurance.finalMonthlyPremium}/month</p>
+            </article>
+            <article className="stat-box">
+              <h3>Loss Ratio</h3>
+              <p>{insurance.lossRatio}%</p>
+            </article>
+          </div>
+        </article>
+
+        <article className="card">
+          <h2>Coverage Exclusions</h2>
+          <p className="muted">Automatic exclusion checks for parametric payout integrity.</p>
+          <div className="checklist">
+            {insurance.exclusionCatalog.map((item) => (
+              <article key={item.id} className={item.applies ? 'check-item fail' : 'check-item pass'}>
+                <p>{item.text}</p>
+                <strong>{item.applies ? 'Triggered' : 'Clear'}</strong>
+              </article>
+            ))}
+          </div>
+          <p className="event-status">
+            Active exclusions: <strong>{insurance.activeExclusions.length}</strong>
+          </p>
+        </article>
+      </section>
+
+      <section className="card">
+        <h2>Regulatory Readiness Checks</h2>
+        <div className="toggles">
+          <label>
+            <input
+              type="checkbox"
+              checked={policy.hasDataConsent}
+              onChange={(e) => updatePolicy('hasDataConsent', e.target.checked)}
+            />
+            Data consent captured before policy activation
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={policy.kycVerified}
+              onChange={(e) => updatePolicy('kycVerified', e.target.checked)}
+            />
+            KYC completed for policyholder
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={policy.disclosureAccepted}
+              onChange={(e) => updatePolicy('disclosureAccepted', e.target.checked)}
+            />
+            Disclosure and exclusions acknowledged in-app
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={policy.grievanceContactAvailable}
+              onChange={(e) => updatePolicy('grievanceContactAvailable', e.target.checked)}
+            />
+            Grievance/appeal contact published
+          </label>
+        </div>
+
+        <div className="checklist">
+          {insurance.regulatoryChecklist.map((rule) => (
+            <article key={rule.id} className={rule.passed ? 'check-item pass' : 'check-item fail'}>
+              <p>{rule.label}</p>
+              <strong>{rule.passed ? 'Pass' : 'Missing'}</strong>
+            </article>
+          ))}
+        </div>
+        <p className="event-status">
+          Compliance status:{' '}
+          <strong>{insurance.compliant ? 'Baseline checks passed' : 'Action required before launch'}</strong>
+        </p>
+      </section>
+
       <section className="card results">
         <h2>Decision Engine Output</h2>
         {!evaluated ? (
@@ -336,7 +598,10 @@ function App() {
       </section>
 
       <footer className="footer">
-        <p>Stack fit: React frontend now live. Next phase can wire FastAPI + Redis + XGBoost API.</p>
+        <p>
+          Stack fit: React frontend now covers fraud defense + insurance fundamentals. Next phase
+          can wire FastAPI + Redis + XGBoost + policy admin APIs.
+        </p>
       </footer>
     </main>
   )

@@ -32,6 +32,10 @@
   gap: 1rem;
 }
 
+.insurance-grid {
+  margin-top: -0.1rem;
+}
+
 .card {
   border: 1px solid #c5dce9;
   border-radius: 16px;
@@ -106,6 +110,76 @@ select {
 
 .event-status {
   margin-top: 0.75rem;
+}
+
+.stats-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.stat-box {
+  border: 1px solid #d1e3ed;
+  border-radius: 12px;
+  background: #f7fbfe;
+  padding: 0.65rem;
+}
+
+.stat-box h3 {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #2b4c5e;
+}
+
+.stat-box p {
+  margin: 0.35rem 0 0;
+  font-weight: 700;
+}
+
+.checklist {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.check-item {
+  border-radius: 10px;
+  padding: 0.6rem;
+  border: 1px solid #d7e7f0;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.check-item p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.check-item strong {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.check-item.pass {
+  background: #f2fbf5;
+  border-color: #b6e0c2;
+}
+
+.check-item.pass strong {
+  color: #0b7a45;
+}
+
+.check-item.fail {
+  background: #fff7f6;
+  border-color: #f0cbc7;
+}
+
+.check-item.fail strong {
+  color: #ae2b21;
 }
 
 .results {
@@ -183,7 +257,8 @@ select {
 @media (max-width: 860px) {
   .grid,
   .field-grid,
-  .signal-list {
+  .signal-list,
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 

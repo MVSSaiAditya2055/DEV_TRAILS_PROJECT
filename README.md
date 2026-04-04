@@ -75,6 +75,67 @@ The goal: make fraud hard, make appeals easy.
 
 ---
 
+## Insurance Product Fundamentals (Added)
+
+To make GigShield a viable parametric insurance product, the prototype now includes product, pricing, and compliance building blocks in addition to fraud control.
+
+### 1. Premium model (indicative monthly pricing)
+
+The app computes an indicative premium using:
+
+- Base payout amount
+- Trigger probability
+- Zone hazard band
+- Historical event frequency band
+- Expense loading
+- Risk margin
+
+Core pricing logic:
+
+`Expected Loss = Base Payout x Trigger Probability x Severity Factor x Frequency Factor x Zone Factor x Exposure Factor`
+
+`Monthly Premium = (Expected Loss + Expense Loading) x (1 + Risk Margin)`
+
+The UI displays:
+
+- Expected monthly loss
+- Indicative monthly premium
+- Resulting loss ratio (%)
+
+### 2. Actuarial view in product flow
+
+The decision screen now includes a practical actuarial summary so pricing can be calibrated before launch:
+
+- Expected loss per worker segment
+- Premium adequacy signal via loss ratio
+- Rate sensitivity through hazard/frequency band changes
+
+This gives a clear bridge between event-trigger mechanics and portfolio-level sustainability.
+
+### 3. Regulatory readiness checks
+
+The prototype now tracks baseline compliance controls required before product rollout:
+
+- Explicit telematics and data processing consent
+- KYC verification status
+- Trigger and exclusion disclosure acceptance
+- Grievance/escalation contact availability
+
+A compliance status banner indicates whether launch-blocking items are still missing.
+
+### 4. Coverage exclusions (explicit)
+
+The product now includes clear exclusion logic that is shown in the UX and evaluated per claim:
+
+- Worker outside insured zone at trigger time
+- Non-red-alert weather event
+- Mock location settings detected in event window
+- Home Wi-Fi overlap indicating non-field activity
+
+Each exclusion is marked as `Triggered` or `Clear` for transparency and auditable decisioning.
+
+---
+
 ## Running locally
 
 ```bash
